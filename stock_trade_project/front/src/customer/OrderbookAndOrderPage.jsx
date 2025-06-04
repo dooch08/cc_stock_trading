@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/api";
 import { useLocation, useNavigate } from "react-router-dom";
+import api from "../api/api";
 import { HomeIcon } from "@heroicons/react/24/outline";
 
 function OrderbookAndOrderPage() {
@@ -21,25 +21,24 @@ function OrderbookAndOrderPage() {
     api.get("/customer/companies").then(res => setCompanies(res.data));
   }, []);
 
+  // 페이지 진입 시 쿼리스트링으로 받은 기업명으로 바로 조회
   useEffect(() => {
     if (initialCompanyName && companies.some(c => c.name === initialCompanyName)) {
+      setCompanyName(initialCompanyName);
       handleOrderbook(initialCompanyName);
     }
     // eslint-disable-next-line
   }, [companies, initialCompanyName]);
 
-  const isValidCompany = (name) => companies.some(c => c.name === name);
-
   const handleOrderbook = async (name = companyName) => {
-    setOrderbook(null);
-    setError("");
-    setOrderResult("");
-    if (!isValidCompany(name)) {
+    setOrderbook(null); setError(""); setOrderResult("");
+    const targetName = name || companyName;
+    if (!companies.some(c => c.name === targetName)) {
       setError("입력한 기업명이 목록에 없습니다.");
       return;
     }
     try {
-      const res = await api.get(`/customer/companies/${name}/orders`);
+      const res = await api.get(`/customer/companies/${targetName}/orders`);
       setOrderbook(res.data);
     } catch (err) {
       setError("호가창 조회 실패: " + (err.response?.data?.detail || err.message));
@@ -47,14 +46,13 @@ function OrderbookAndOrderPage() {
   };
 
   const handleBuy = async () => {
-    setOrderResult("");
-    setError("");
-    if (!isValidCompany(companyName)) {
+    setOrderResult(""); setError("");
+    if (!companies.some(c => c.name === companyName)) {
       setError("입력한 기업명이 목록에 없습니다.");
       return;
     }
     if (!orderPrice || !orderCount) {
-      setError("가격과 수량을 모두 입력하세요.");
+      setError("주문 가격과 수량을 입력하세요.");
       return;
     }
     try {
@@ -63,7 +61,10 @@ function OrderbookAndOrderPage() {
         price: Number(orderPrice),
         count: Number(orderCount)
       });
-      setOrderResult("매수: " + res.data.message + ` (체결: ${res.data.concluded_count}, 미체결: ${res.data.remaining_count})`);
+      setOrderResult("매수: " + res.data.message +
+        ` (체결: ${res.data.concluded_count}, 미체결: ${res.data.remaining_count})`);
+
+      // 주문 성공 후 호가창 갱신
       await handleOrderbook(companyName);
       setOrderPrice("");
       setOrderCount("");
@@ -73,14 +74,13 @@ function OrderbookAndOrderPage() {
   };
 
   const handleSell = async () => {
-    setOrderResult("");
-    setError("");
-    if (!isValidCompany(companyName)) {
+    setOrderResult(""); setError("");
+    if (!companies.some(c => c.name === companyName)) {
       setError("입력한 기업명이 목록에 없습니다.");
       return;
     }
     if (!orderPrice || !orderCount) {
-      setError("가격과 수량을 모두 입력하세요.");
+      setError("주문 가격과 수량을 입력하세요.");
       return;
     }
     try {
@@ -89,7 +89,8 @@ function OrderbookAndOrderPage() {
         price: Number(orderPrice),
         count: Number(orderCount)
       });
-      setOrderResult("매도: " + res.data.message + ` (체결: ${res.data.concluded_count}, 미체결: ${res.data.remaining_count})`);
+      setOrderResult("매도: " + res.data.message +
+        ` (체결: ${res.data.concluded_count}, 미체결: ${res.data.remaining_count})`);
       await handleOrderbook(companyName);
       setOrderPrice("");
       setOrderCount("");
@@ -115,7 +116,7 @@ function OrderbookAndOrderPage() {
           placeholder="기업명 입력"
           className="border px-4 py-2 rounded-md flex-grow"
         />
-        <button onClick={handleOrderbook} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">호가창 조회</button>
+        <button onClick={() => handleOrderbook()} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">호가창 조회</button>
       </div>
 
       {error && <div className="text-red-500 mb-4">{error}</div>}

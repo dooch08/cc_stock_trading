@@ -1,19 +1,14 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 
 function RegisterPage() {
-  const [form, setForm] = useState({
-    id: "",
-    password: "",
-    name: "",
-    phone: "",
-    type: "customer",
-  });
+  const [form, setForm] = useState({ id: "", password: "", name: "", phone: "", type: "customer" });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -21,11 +16,10 @@ function RegisterPage() {
       let url = "/auth/register/customer";
       if (form.type === "company") url = "/auth/register/company";
       await api.post(url, form);
-      setMessage("✅ 회원가입 성공! 로그인 해주세요.");
+      setMessage("회원가입 성공! 로그인 해주세요.");
       setError("");
     } catch (err) {
-      setError("❌ 회원가입 실패: " + (err.response?.data?.detail || err.message));
-      setMessage("");
+      setError("회원가입 실패: " + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -93,6 +87,7 @@ function RegisterPage() {
         {error && (
           <div className="text-red-500 text-center text-sm">{error}</div>
         )}
+        <button onClick={() => navigate("/login")} style={{ marginLeft: "5px" }}>로그인</button>
       </form>
     </div>
   );

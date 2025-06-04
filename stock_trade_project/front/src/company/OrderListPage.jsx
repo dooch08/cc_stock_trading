@@ -10,21 +10,20 @@ function OrderListPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  // 주문 목록 불러오기
   const fetchOrders = () => {
     api.get("/company/orders")
       .then(res => setOrders(res.data))
-      .catch(err =>
-        setError("주문 목록 조회 실패: " + (err.response?.data?.detail || err.message))
-      );
+      .catch(err => setError("주문 목록 조회 실패: " + (err.response?.data?.detail || err.message)));
   };
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
+  // 주문 취소
   const handleCancel = async () => {
-    setCancelResult("");
-    setError("");
+    setCancelResult(""); setError("");
     if (!cancelOrderNumber) {
       setError("주문번호를 입력하세요.");
       return;
@@ -34,28 +33,18 @@ function OrderListPage() {
       return;
     }
     try {
-      await api.delete("/company/orders", {
-        data: { order_number: Number(cancelOrderNumber) },
-      });
+      await api.delete("/company/orders", { data: { order_number: Number(cancelOrderNumber) } });
       setCancelResult(`주문번호 ${cancelOrderNumber}번이 취소되었습니다.`);
       setCancelOrderNumber("");
-      fetchOrders();
+      fetchOrders(); // 목록 갱신
     } catch (err) {
       setError("주문 취소 실패: " + (err.response?.data?.detail || err.message));
     }
   };
 
-  const handleGoHome = () => {
-    const userRole = localStorage.getItem("userRole");
-    if (userRole === "admin") navigate("/admin/home");
-    else if (userRole === "company") navigate("/company/home");
-    else if (userRole === "customer") navigate("/customer/home");
-    else navigate("/login");
-  };
-
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex justify-center">
-      <div className="w-full max-w-4xl bg-white p-6 rounded-xl shadow-md space-y-6 relative">
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow-md space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">📋 내 주문 목록</h2>
           <button

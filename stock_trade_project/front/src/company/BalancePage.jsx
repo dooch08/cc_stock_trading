@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/api";
 import { useNavigate } from "react-router-dom";
+import api from "../api/api";
 import { HomeIcon } from "@heroicons/react/24/outline";
 
 function BalancePage() {
@@ -11,7 +11,7 @@ function BalancePage() {
     api.get("/company/balance").then(res => setBalance(res.data));
   }, []);
 
-  if (!balance) return <div className="text-center mt-10">로딩 중...</div>;
+  if (!balance) return <div>로딩 중...</div>;
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">

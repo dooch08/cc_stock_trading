@@ -1,30 +1,38 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../api/api";
-import { useNavigate } from "react-router-dom";
 import { HomeIcon } from "@heroicons/react/24/outline";
 
 function CompanyFinancePage() {
-  const [companyName, setCompanyName] = useState("");
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const initialCompanyName = params.get("name") || "";
+
+  const [companyName, setCompanyName] = useState(initialCompanyName);
   const [finance, setFinance] = useState(null);
   const [error, setError] = useState("");
   const [companies, setCompanies] = useState([]);
   const navigate = useNavigate();
 
-  // 기업 목록 캐싱
   useEffect(() => {
     api.get("/company/companies").then(res => setCompanies(res.data));
   }, []);
 
-  // 재무정보 조회
-  const handleFinance = async () => {
-    setFinance(null);
-    setError("");
-    if (!companies.some(c => c.name === companyName)) {
+  useEffect(() => {
+    if (initialCompanyName && companies.some(c => c.name === initialCompanyName)) {
+      handleFinance(initialCompanyName);
+    }
+    // eslint-disable-next-line
+  }, [companies, initialCompanyName]);
+
+  const handleFinance = async (name = companyName) => {
+    setFinance(null); setError("");
+    if (!companies.some(c => c.name === name)) {
       setError("입력한 기업명이 목록에 없습니다.");
       return;
     }
     try {
-      const res = await api.get(`/company/companies/${companyName}/info`);
+      const res = await api.get(`/company/companies/${name}/info`);
       setFinance(res.data);
     } catch (err) {
       setError("재무정보 조회 실패: " + (err.response?.data?.detail || err.message));

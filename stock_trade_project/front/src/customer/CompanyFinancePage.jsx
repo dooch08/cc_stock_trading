@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/api";
 import { useLocation } from "react-router-dom";
+import api from "../api/api";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 function CompanyFinancePage() {
@@ -13,10 +13,12 @@ function CompanyFinancePage() {
   const [error, setError] = useState("");
   const [companies, setCompanies] = useState([]);
 
+  // 기업 목록 캐싱
   useEffect(() => {
     api.get("/customer/companies").then(res => setCompanies(res.data));
   }, []);
 
+  // 페이지 진입 시 쿼리스트링으로 받은 기업명으로 바로 조회
   useEffect(() => {
     if (initialCompanyName && companies.some(c => c.name === initialCompanyName)) {
       handleFinance(initialCompanyName);
@@ -24,6 +26,7 @@ function CompanyFinancePage() {
     // eslint-disable-next-line
   }, [companies, initialCompanyName]);
 
+  // 재무정보 조회 함수 분리
   const handleFinance = async (name = companyName) => {
     setFinance(null); setError("");
     if (!companies.some(c => c.name === name)) {

@@ -10,21 +10,20 @@ function OrderListPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  // 주문 목록 불러오기
   const fetchOrders = () => {
     api.get("/customer/orders")
       .then(res => setOrders(res.data))
-      .catch(err =>
-        setError("주문 목록 조회 실패: " + (err.response?.data?.detail || err.message))
-      );
+      .catch(err => setError("주문 목록 조회 실패: " + (err.response?.data?.detail || err.message)));
   };
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
+  // 주문 취소
   const handleCancel = async () => {
-    setCancelResult("");
-    setError("");
+    setCancelResult(""); setError("");
     if (!cancelOrderNumber) {
       setError("주문번호를 입력하세요.");
       return;
@@ -34,12 +33,10 @@ function OrderListPage() {
       return;
     }
     try {
-      await api.delete("/customer/orders", {
-        data: { order_number: Number(cancelOrderNumber) },
-      });
+      await api.delete("/customer/orders", { data: { order_number: Number(cancelOrderNumber) } });
       setCancelResult(`주문번호 ${cancelOrderNumber}번이 취소되었습니다.`);
       setCancelOrderNumber("");
-      fetchOrders();
+      fetchOrders(); // 목록 갱신
     } catch (err) {
       setError("주문 취소 실패: " + (err.response?.data?.detail || err.message));
     }
@@ -82,7 +79,7 @@ function OrderListPage() {
           </table>
         </div>
 
-        <div className="mt-6 flex flex-col sm:flex-row gap-3 items-center">
+        <div className="mt-6 flex flex-col sm:flex-row gap-3 items-center justify-end">
           <input
             type="number"
             value={cancelOrderNumber}
@@ -97,6 +94,7 @@ function OrderListPage() {
             주문 취소
           </button>
         </div>
+
 
         {cancelResult && (
           <div className="text-blue-600 mt-4 font-medium">{cancelResult}</div>

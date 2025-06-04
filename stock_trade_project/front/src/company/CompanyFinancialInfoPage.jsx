@@ -1,7 +1,7 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import { HomeIcon } from "@heroicons/react/24/outline";
-import { useNavigate } from "react-router-dom";
 
 function CompanyFinancialInfoPage() {
   const [form, setForm] = useState({
@@ -14,20 +14,18 @@ function CompanyFinancialInfoPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setResult("");
-    setError("");
+    setResult(""); setError("");
     try {
-      await api.post("/company/financial-info", {
+      const res = await api.post("/company/financial-info", {
         ...form,
         year: Number(form.year),
         sales: Number(form.sales),
         business_profits: Number(form.business_profits),
-        pure_profits: Number(form.pure_profits),
+        pure_profits: Number(form.pure_profits)
       });
       setResult("재무정보 등록 완료!");
     } catch (err) {

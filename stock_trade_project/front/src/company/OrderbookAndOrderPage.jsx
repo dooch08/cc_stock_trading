@@ -1,8 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import api from "../api/api";
 
 function OrderbookAndOrderPage() {
-  const [companyName, setCompanyName] = useState("");
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const initialCompanyName = params.get("name") || "";
+  const inputRef = useRef(null);
+
+  const [companyName, setCompanyName] = useState(initialCompanyName);
   const [orderbook, setOrderbook] = useState(null);
   const [orderPrice, setOrderPrice] = useState("");
   const [orderCount, setOrderCount] = useState("");
@@ -14,175 +20,156 @@ function OrderbookAndOrderPage() {
     api.get("/company/companies").then(res => setCompanies(res.data));
   }, []);
 
-  const isValidCompany = (name) => companies.some(c => c.name === name);
 
-  const handleOrderbook = async () => {
-    setOrderbook(null);
-    setError("");
-    setOrderResult("");
-    if (!isValidCompany(companyName)) {
+  useEffect(() => {
+    if (initialCompanyName && companies.some(c => c.name === initialCompanyName)) {
+      handleOrderbook(initialCompanyName);
+    }
+    // eslint-disable-next-line
+  }, [companies, initialCompanyName]);
+
+  const handleOrderbook = async (name = companyName) => {
+    setOrderbook(null); setError(""); setOrderResult("");
+    if (!companies.some(c => c.name === name)) {
       setError("입력한 기업명이 목록에 없습니다.");
       return;
     }
     try {
-      const res = await api.get(`/company/companies/${companyName}/orders`);
+      const res = await api.get(`/company/companies/${name}/orders`);
       setOrderbook(res.data);
     } catch (err) {
       setError("호가창 조회 실패: " + (err.response?.data?.detail || err.message));
     }
   };
 
+  // 매수 주문
   const handleBuy = async () => {
-    setOrderResult("");
-    setError("");
-    if (!isValidCompany(companyName)) {
+    setOrderResult(""); setError("");
+    if (!companies.some(c => c.name === companyName)) {
       setError("입력한 기업명이 목록에 없습니다.");
       return;
     }
     if (!orderPrice || !orderCount) {
-      setError("가격과 수량을 모두 입력하세요.");
+      setError("주문 가격과 수량을 입력하세요.");
       return;
     }
     try {
       const res = await api.post("/company/trading/buy", {
         company_name: companyName,
         price: Number(orderPrice),
-        count: Number(orderCount),
+        count: Number(orderCount)
       });
-      setOrderResult(
-        `매수: ${res.data.message} (체결: ${res.data.concluded_count}, 미체결: ${res.data.remaining_count})`
-      );
+      setOrderResult("매수: " + res.data.message +
+        ` (체결: ${res.data.concluded_count}, 미체결: ${res.data.remaining_count})`);
+
+
+      await handleOrderbook(companyName);
+
+      setOrderPrice(""); 
+      setOrderCount("");
     } catch (err) {
       setOrderResult("매수 실패: " + (err.response?.data?.detail || err.message));
     }
   };
 
+  // 매도 주문
   const handleSell = async () => {
-    setOrderResult("");
-    setError("");
-    if (!isValidCompany(companyName)) {
+    setOrderResult(""); setError("");
+    if (!companies.some(c => c.name === companyName)) {
       setError("입력한 기업명이 목록에 없습니다.");
       return;
     }
     if (!orderPrice || !orderCount) {
-      setError("가격과 수량을 모두 입력하세요.");
+      setError("주문 가격과 수량을 입력하세요.");
       return;
     }
     try {
       const res = await api.post("/company/trading/sell", {
         company_name: companyName,
         price: Number(orderPrice),
-        count: Number(orderCount),
+        count: Number(orderCount)
       });
-      setOrderResult(
-        `매도: ${res.data.message} (체결: ${res.data.concluded_count}, 미체결: ${res.data.remaining_count})`
-      );
+      setOrderResult("매도: " + res.data.message +
+        ` (체결: ${res.data.concluded_count}, 미체결: ${res.data.remaining_count})`);
+
+
+      await handleOrderbook(companyName);
+
+      setOrderPrice(""); 
+      setOrderCount("");
     } catch (err) {
       setOrderResult("매도 실패: " + (err.response?.data?.detail || err.message));
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex justify-center">
-      <div className="w-full max-w-3xl bg-white p-6 rounded-xl shadow-md space-y-6">
-        <h2 className="text-2xl font-bold">📊 호가창 조회 및 주식 주문</h2>
-
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <input
-            type="text"
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="기업명 입력"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <button
-            onClick={handleOrderbook}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition"
-          >
-            호가창 조회
-          </button>
-        </div>
-
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-
-        {orderbook && (
-          <div className="mt-4 space-y-4">
-            <h3 className="text-lg font-semibold">호가창 - {companyName}</h3>
-            <div className="flex gap-6">
-              <div className="flex-1">
-                <h4 className="font-semibold text-green-600">매수</h4>
-                <table className="w-full text-sm border border-gray-300">
-                  <thead className="bg-green-100">
-                    <tr>
-                      <th className="border px-2 py-1">가격</th>
-                      <th className="border px-2 py-1">수량</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orderbook.buy_orders.map((o, i) => (
-                      <tr key={i} className="text-center">
-                        <td className="border px-2 py-1">{o.price}</td>
-                        <td className="border px-2 py-1">{o.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-red-600">매도</h4>
-                <table className="w-full text-sm border border-gray-300">
-                  <thead className="bg-red-100">
-                    <tr>
-                      <th className="border px-2 py-1">가격</th>
-                      <th className="border px-2 py-1">수량</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orderbook.sell_orders.map((o, i) => (
-                      <tr key={i} className="text-center">
-                        <td className="border px-2 py-1">{o.price}</td>
-                        <td className="border px-2 py-1">{o.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+    <div>
+      <h2>호가창 조회 및 자사주 주문</h2>
+      <button onClick={() => window.history.back()} style={{ float: "right" }}>이전 페이지</button>
+      <input
+        ref={inputRef}
+        type="text"
+        value={companyName}
+        onChange={e => setCompanyName(e.target.value)}
+        placeholder="기업명 입력"
+      />
+      <button onClick={() => handleOrderbook(inputRef.current.value)}>호가창 조회</button>
+      {error && <div style={{ color: "red" }}>{error}</div>}
+      {/* 호가창 출력 */}
+      {orderbook && (
+        <div style={{ margin: "20px 0" }}>
+          <h3>호가창 - {companyName}</h3>
+          <div style={{ display: "flex", gap: "40px" }}>
+            <div>
+              <strong>매수</strong>
+              <table border="1">
+                <thead>
+                  <tr><th>가격</th><th>수량</th></tr>
+                </thead>
+                <tbody>
+                  {orderbook.buy_orders.map((o, i) => (
+                    <tr key={i}><td>{o.price}</td><td>{o.count}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <strong>매도</strong>
+              <table border="1">
+                <thead>
+                  <tr><th>가격</th><th>수량</th></tr>
+                </thead>
+                <tbody>
+                  {orderbook.sell_orders.map((o, i) => (
+                    <tr key={i}><td>{o.price}</td><td>{o.count}</td></tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
-
-        {/* 주문 입력 */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <input
-            type="number"
-            value={orderPrice}
-            onChange={(e) => setOrderPrice(e.target.value)}
-            placeholder="주문 가격"
-            className="flex-1 px-4 py-2 border rounded-md"
-          />
-          <input
-            type="number"
-            value={orderCount}
-            onChange={(e) => setOrderCount(e.target.value)}
-            placeholder="주문 수량"
-            className="flex-1 px-4 py-2 border rounded-md"
-          />
-          <button
-            onClick={handleBuy}
-            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
-          >
-            매수
-          </button>
-          <button
-            onClick={handleSell}
-            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
-          >
-            매도
-          </button>
         </div>
+      )}
 
-        {orderResult && <div className="text-blue-700 font-medium">{orderResult}</div>}
+      {/* 주문 입력 */}
+      <div style={{ margin: "20px 0" }}>
+        <input
+          type="number"
+          value={orderPrice}
+          onChange={e => setOrderPrice(e.target.value)}
+          placeholder="주문 가격"
+          style={{ marginRight: "10px" }}
+        />
+        <input
+          type="number"
+          value={orderCount}
+          onChange={e => setOrderCount(e.target.value)}
+          placeholder="주문 수량"
+          style={{ marginRight: "10px" }}
+        />
+        <button onClick={handleBuy}>매수</button>
+        <button onClick={handleSell} style={{ marginLeft: "5px" }}>매도</button>
       </div>
+      {orderResult && <div style={{ color: "blue" }}>{orderResult}</div>}
     </div>
   );
 }

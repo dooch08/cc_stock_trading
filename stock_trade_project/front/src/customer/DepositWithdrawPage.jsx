@@ -3,35 +3,32 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import { HomeIcon } from "@heroicons/react/24/outline";
 
-
 function DepositWithdrawPage() {
   const [amount, setAmount] = useState("");
   const [result, setResult] = useState("");
   const navigate = useNavigate();
 
-  const validateAmount = () => !amount || isNaN(amount) || Number(amount) <= 0;
-
   const handleDeposit = async () => {
-    if (validateAmount()) {
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
       setResult("올바른 금액을 입력하세요.");
       return;
     }
     try {
       const res = await api.post("/customer/deposit", { amount: Number(amount) });
-      setResult(`${res.data.message} (잔액: ${res.data.balance})`);
+      setResult(res.data.message + " (잔액: " + res.data.balance + ")");
     } catch (err) {
       setResult("입금 실패: " + (err.response?.data?.detail || err.message));
     }
   };
 
   const handleWithdraw = async () => {
-    if (validateAmount()) {
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
       setResult("올바른 금액을 입력하세요.");
       return;
     }
     try {
       const res = await api.post("/customer/withdraw", { amount: Number(amount) });
-      setResult(`${res.data.message} (잔액: ${res.data.balance})`);
+      setResult(res.data.message + " (잔액: " + res.data.balance + ")");
     } catch (err) {
       setResult("출금 실패: " + (err.response?.data?.detail || err.message));
     }

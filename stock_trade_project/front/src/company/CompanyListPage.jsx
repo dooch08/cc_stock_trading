@@ -10,11 +10,13 @@ function CompanyListPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get("/company/companies").then((res) => setCompanies(res.data));
+    api.get("/company/companies").then(res => setCompanies(res.data));
   }, []);
 
-  const isValidCompany = (name) => companies.some((c) => c.name === name);
+  // 기업명 유효성 검사
+  const isValidCompany = (name) => companies.some(c => c.name === name);
 
+  // 버튼 클릭시 페이지 이동
   const handleGoFinance = () => {
     if (!isValidCompany(inputName)) {
       setAlert("입력한 기업명이 목록에 없습니다.");

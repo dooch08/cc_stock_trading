@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function CustomerHome() {
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState(null);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("token"); // 토큰 삭제
     localStorage.removeItem("userRole");
-    navigate("/login");
+    setUserRole(null);
+    navigate("/login"); // 로그인 페이지로 이동
   };
 
   return (

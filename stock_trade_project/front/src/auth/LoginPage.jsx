@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import api, { setAuthToken } from "../api/api";
 import { useNavigate } from "react-router-dom";
+import api, { setAuthToken } from "../api/api";
 
 function LoginPage({ onLogin }) {
   const [id, setId] = useState("");
@@ -17,30 +17,20 @@ function LoginPage({ onLogin }) {
         password,
         user_type: userType,
       });
-
       setAuthToken(res.data.access_token);
       onLogin(res.data.user_info, userType);
 
+      // 로그인 성공 후 계정 유형별 홈으로 이동
       localStorage.setItem("token", res.data.access_token);
-      if (userType === "customer") navigate("/customer/home");
-      else if (userType === "company") navigate("/company/home");
-      else if (userType === "admin") navigate("/admin/home");
-
-    } catch (err) {
-      console.error("🔍 로그인 에러 디버깅 정보:", err); // 콘솔에 전체 에러 출력
-
-      if (err.response) {
-        // 서버는 응답했으나 상태코드가 2xx가 아님
-        const status = err.response.status;
-        const detail = err.response.data?.detail || JSON.stringify(err.response.data);
-        setError(`❌ 로그인 실패 (${status}): ${detail}`);
-      } else if (err.request) {
-        // 요청은 전송되었으나 응답이 없음
-        setError("❌ 로그인 실패: 서버로부터 응답이 없습니다. 네트워크 상태를 확인해주세요.");
-      } else {
-        // 요청 설정 문제 등
-        setError("❌ 로그인 요청 중 오류 발생: " + err.message);
+      if (userType === "customer") {
+        navigate("/customer/home");
+      } else if (userType === "company") {
+        navigate("/company/home");
+      } else if (userType === "admin") {
+        navigate("/admin/home");
       }
+    } catch (err) {
+      setError("로그인 실패: " + (err.response?.data?.detail || err.message));
     }
   };
 
