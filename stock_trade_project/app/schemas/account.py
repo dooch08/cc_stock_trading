@@ -5,7 +5,7 @@ from decimal import Decimal
 
 class AccountBase(BaseModel):
     name: str
-    phone: str
+    phone: Optional[str] = None
     type: str
 
 
@@ -37,9 +37,9 @@ class AccountCreate(AccountBase):
 
 
 class AccountResponse(AccountBase):
-    a_number: Decimal
-    cash: int
-    capital_gain: int
+    a_number: Optional[Decimal] = None
+    cash: Optional[int] = None
+    capital_gain: Optional[int] = None
 
     class Config:
         from_attributes = True

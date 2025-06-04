@@ -45,16 +45,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         user_id: str = payload.get("sub")
         user_type: str = payload.get("type")
-        if user_id is None:
+        if user_id is None or user_type is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    account_repo = AccountRepository(db)
-    user = account_repo.get_by_id(user_id)
+    if user_type == "admin":
+        # Admin 테이블에서 조회
+        from app.models.account import Admin
+        user = db.query(Admin).filter(Admin.id == user_id).first()
+    else:
+        # Account 테이블에서 조회
+        from app.models.account import Account
+        user = db.query(Account).filter(Account.id == user_id).first()
+
     if user is None:
         raise credentials_exception
     return user
+
 
 
 def require_role(allowed_roles: List[str]):

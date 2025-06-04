@@ -101,14 +101,16 @@ class CompanyService(CustomerService):  # CustomerService 상속으로 공통 �
         company_balances = self.account_repo.get_company_balance(current_user.a_number)
         stock_balance = next((b for b in company_balances if b.stock_name == company_name), None)
 
-        if not stock_balance or stock_balance.stock_count < request.count:
+        # 미체결 매도 주문 수량 합계
+        unsettled_sell_orders = self.order_repo.get_unsettled_sell_orders(current_user.a_number, company_name)
+        unsettled_sell_count = sum(order.count for order in unsettled_sell_orders)
+        orderable_count = (stock_balance.stock_count if stock_balance else 0) - unsettled_sell_count
+
+        if not stock_balance or orderable_count < request.count:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="보유 자사주가 부족합니다"
             )
-
-        # 보유 자사주 차감
-        self.account_repo.update_company_balance(current_user.a_number, company_name, -request.count, 0)
 
         # 매수 주문 매칭 확인
         matching_orders = self.order_repo.get_matching_orders(
@@ -196,9 +198,9 @@ class CompanyService(CustomerService):  # CustomerService 상속으로 공통 �
             # 매수 주문 취소 시 현금 환불
             refund_amount = order.price * order.count
             self.account_repo.update_cash(current_user.a_number, refund_amount)
-        else:
+       # else:
             # 매도 주문 취소 시 자사주 복원
-            self.account_repo.update_company_balance(current_user.a_number, order.name, order.count, 0)
+            #self.account_repo.update_company_balance(current_user.a_number, order.name, order.count, 0, self.order_repo, update_avg_price=False)
 
         success = self.order_repo.delete_order(request.order_number)
         if not success:

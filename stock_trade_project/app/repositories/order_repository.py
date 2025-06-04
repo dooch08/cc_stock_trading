@@ -30,6 +30,16 @@ class OrderRepository:
     def get_orders_by_account(self, a_number: int) -> List[OrderList]:
         return self.db.query(OrderList).filter(OrderList.a_number == a_number).all()
 
+    # order_repository.py
+
+    def get_unsettled_sell_orders(self, a_number: int, company_name: str) -> List[OrderList]:
+        """해당 계좌, 종목에 대해 미체결 매도 주문만 조회"""
+        return self.db.query(OrderList).filter(
+            OrderList.a_number == a_number,
+            OrderList.name == company_name,
+            OrderList.type == "sell"
+        ).all()
+
     def get_order_by_number(self, order_number: int, a_number: int = None) -> Optional[OrderList]:
         query = self.db.query(OrderList).filter(OrderList.order_number == order_number)
         if a_number:

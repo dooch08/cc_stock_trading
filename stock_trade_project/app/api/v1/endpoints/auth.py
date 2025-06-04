@@ -156,9 +156,7 @@ def login(
 ):
     """로그인"""
     account_repo = AccountRepository(db)
-
-    # 사용자 타입에 따라 인증 처리
-    user_type = request.user_type  # client_id를 user_type으로 사용
+    user_type = request.user_type
 
     if user_type == "admin":
         user = account_repo.get_admin_by_id(request.id)
@@ -168,7 +166,7 @@ def login(
                 detail="잘못된 인증 정보입니다",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        user_info = { "name": "관리자", "phone": "010-4049-1494", "type": "admin", "a_number": 0, "cash": 0, "capital_gain":0}
+        user_info = {"id": user.id, "type": "admin", "name": "관리자", "a_number": None}
     else:
         user = account_repo.get_by_id(request.id)
         if not user or request.password != user.password:
@@ -177,8 +175,13 @@ def login(
                 detail="잘못된 인증 정보입니다",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        if user.type != user_type:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="계정 유형이 일치하지 않습니다.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         user_info = AccountResponse.from_orm(user)
-        print(user_info)
 
     # JWT 토큰 생성
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
@@ -192,3 +195,4 @@ def login(
         "token_type": "bearer",
         "user_info": user_info
     }
+

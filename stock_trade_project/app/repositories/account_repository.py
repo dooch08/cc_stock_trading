@@ -68,24 +68,37 @@ class AccountRepository:
     def get_company_balance(self, a_number: int) -> List[CompanyBalance]:
         return self.db.query(CompanyBalance).filter(CompanyBalance.a_number == a_number).all()
 
-    def update_customer_balance(self, a_number: int, stock_name: str, count: int, avg_price: float):
+    def update_customer_balance(self, a_number: int, stock_name: str, count: int, avg_price: float, order_repo=None, update_avg_price=True):
         balance = self.db.query(CustomerBalance).filter(
             CustomerBalance.a_number == a_number,
             CustomerBalance.stock_name == stock_name
         ).first()
-
+        """
+        개인 계정의 보유 주식(자사주) 잔고 갱신
+        - count: +면 매수, -면 매도
+        - avg_price: 매수 시 평균 단가, 매도 시 0 또는 무시
+        - order_repo: 미체결 매도 주문 조회용(필수)
+        """
         if balance:
-            # 기존 보유 주식이 있는 경우
             total_count = balance.stock_count + count
             if total_count <= 0:
-                self.db.delete(balance)
+                # 미체결 매도 주문이 남아있는지 확인
+                if order_repo is not None:
+                    unsettled_sells = order_repo.get_unsettled_sell_orders(a_number, stock_name)
+                    if unsettled_sells:
+                        # 미체결 매도 주문이 있으면 balance는 0으로만 갱신(삭제X)
+                        balance.stock_count = 0
+                    else:
+                        self.db.delete(balance)
+                else:
+                    # order_repo를 전달받지 못한 경우 기존대로 삭제
+                    self.db.delete(balance)
             else:
-                if count > 0:  # 매수인 경우만 평균 단가 업데이트
+                if count > 0 and update_avg_price:  # 매수인 경우만 평균 단가 업데이트
                     total_cost = balance.stock_count * balance.avg_buy_price + count * avg_price
                     balance.avg_buy_price = total_cost / total_count
                 balance.stock_count = total_count
         else:
-            # 새로운 주식 보유
             if count > 0:
                 new_balance = CustomerBalance(
                     a_number=a_number,
@@ -94,10 +107,9 @@ class AccountRepository:
                     avg_buy_price=avg_price
                 )
                 self.db.add(new_balance)
-
         self.db.commit()
 
-    def update_company_balance(self, a_number: int, stock_name: str, count: int, avg_price: float):
+    def update_company_balance(self, a_number: int, stock_name: str, count: int, avg_price: float, order_repo=None, update_avg_price=True):
         balance = self.db.query(CompanyBalance).filter(
             CompanyBalance.a_number == a_number,
             CompanyBalance.stock_name == stock_name
@@ -106,9 +118,19 @@ class AccountRepository:
         if balance:
             total_count = balance.stock_count + count
             if total_count <= 0:
-                self.db.delete(balance)
+                # 미체결 매도 주문이 남아있는지 확인
+                if order_repo is not None:
+                    unsettled_sells = order_repo.get_unsettled_sell_orders(a_number, stock_name)
+                    if unsettled_sells:
+                        # 미체결 매도 주문이 있으면 balance는 0으로만 갱신(삭제X)
+                        balance.stock_count = 0
+                    else:
+                        self.db.delete(balance)
+                else:
+                    # order_repo를 전달받지 못한 경우 기존대로 삭제
+                    self.db.delete(balance)
             else:
-                if count > 0:  # 매수인 경우만 평균 단가 업데이트
+                if count > 0 and update_avg_price:  # 매수인 경우만 평균 단가 업데이트
                     total_cost = balance.stock_count * balance.avg_buy_price + count * avg_price
                     balance.avg_buy_price = total_cost / total_count
                 balance.stock_count = total_count
@@ -121,5 +143,5 @@ class AccountRepository:
                     avg_buy_price=avg_price
                 )
                 self.db.add(new_balance)
-
         self.db.commit()
+
