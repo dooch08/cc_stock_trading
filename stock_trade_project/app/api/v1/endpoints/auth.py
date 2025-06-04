@@ -168,7 +168,7 @@ def login(
                 detail="잘못된 인증 정보입니다",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        user_info = {"id": user.id, "type": "admin", "name": "관리자", "a_number": None}
+        user_info = { "name": "관리자", "phone": "010-4049-1494", "type": "admin", "a_number": 0, "cash": 0, "capital_gain":0}
     else:
         user = account_repo.get_by_id(request.id)
         if not user or request.password != user.password:
@@ -178,6 +178,7 @@ def login(
                 headers={"WWW-Authenticate": "Bearer"},
             )
         user_info = AccountResponse.from_orm(user)
+        print(user_info)
 
     # JWT 토큰 생성
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./auth/LoginPage";
 import RegisterPage from "./auth/RegisterPage";
@@ -32,12 +32,24 @@ import CompanyFinancialInfoPage from "./company/CompanyFinancialInfoPage";
 function App() {
   // 로그인 상태 관리(간단 예시)
   const [userRole, setUserRole] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // ⭐ 새로고침 시 localStorage에서 상태 복원
+  useEffect(() => {
+    const savedRole = localStorage.getItem("userRole");
+    if (savedRole) {
+      setUserRole(savedRole);
+    }
+    setLoading(false);
+  }, []);
 
   // 로그인 성공 시 콜백
   const handleLogin = (userInfo, userType) => {
     setUserRole(userType);
+    localStorage.setItem("userRole", userType);  // 👉 상태도 저장
   };
 
+  if (loading) return <div>로딩 중...</div>;  // 아직 로그인 상태 복원 중
   return (
     <Routes>
       {/* 인증 */}
